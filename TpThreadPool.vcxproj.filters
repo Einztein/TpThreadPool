@@ -15,15 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ThreadPool.h">
+    <ClInclude Include="include/TpThreadPool/TpThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadPoolTask.h">
+    <ClInclude Include="include/TpThreadPool/TpThreadPoolTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ThreadPool.cpp">
+    <ClCompile Include="src/TpThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

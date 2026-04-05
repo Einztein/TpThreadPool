@@ -19,11 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ThreadPool.h" />
-    <ClInclude Include="ThreadPoolTask.h" />
+    <ClInclude Include="include/TpThreadPool/TpThreadPool.h" />
+    <ClInclude Include="include/TpThreadPool/TpThreadPoolTask.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ThreadPool.cpp" />
+    <ClCompile Include="src/TpThreadPool.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

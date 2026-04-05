@@ -1,5 +1,6 @@
 **/vsout/
 **/mkout/
+**/out/
 **/.vs/
 **/.vscode/
 *.vcxproj.user

@@ -6,24 +6,10 @@
 #include <mutex>
 #include <list>
 #include <condition_variable>
-#include "ThreadPool.h"
+#include "TpThreadPool/TpThreadPool.h"
 
 namespace Tp
 {
-class Exception final : public std::exception
-{
-public:
-    explicit Exception(std::string&& str): msg(str) {}
-
-    const char* what() const noexcept override
-    {
-        return msg.c_str();
-    }
-
-private:
-    std::string msg;
-};
-
 class TpThread;
 
 struct TpThreadPool::TpThreadPoolPrivates
@@ -133,7 +119,7 @@ void TpThreadPool::setTaskQueCountChangeCallback()
 
 size_t TpThreadPool::changeThreadCount(const size_t count, const bool force_kill_randomly) const
 {
-    if (count == 0) throw Exception("tp_threadpool_change_to_zero");
+    if (count == 0) throw std::runtime_error("tp_threadpool_change_to_zero");
     if (count > mem->ths.size())
     {
         for (size_t i = mem->ths.size(); i < count; i++)
