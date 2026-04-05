@@ -1,6 +1,6 @@
 find_package(Threads REQUIRED)
 
-set(TpThreadPool_SRC src/ThreadPool.cpp)
+set(TpThreadPool_SRC src/TpThreadPool.cpp)
 
 add_library(TpThreadPool STATIC ${TpThreadPool_SRC})
 add_library(TpThreadPool::TpThreadPool ALIAS TpThreadPool)
