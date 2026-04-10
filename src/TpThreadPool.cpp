@@ -57,10 +57,13 @@ public:
             });
             lck_on.unlock();
             if (pending_terminate) break;
+            current_task_is_disposal = (dynamic_cast<TpDisposalBase*>(task_working) != nullptr);
             task_base_atom = task_working;
             task_working->invoke();
-            // FIXME: between this, task_working may be deleted
+            // FIXME-1: between this, task_working may be deleted
             task_base_atom = nullptr;
+            current_task_is_disposal = false;
+            // FIXED-1: by adding a flag current_task_is_disposal, 260410
         }
         std::unique_lock<std::mutex> lck_off(mt_off_duty);
         is_off_duty = true;
@@ -75,6 +78,7 @@ public:
     std::condition_variable             cv_on_duty, cv_off_duty;
     std::atomic_bool                    pending_terminate{false}, is_off_duty{false};
     std::atomic<TpTaskBase*>            task_base_atom{nullptr};
+    std::atomic_bool                    current_task_is_disposal{false};
     std::thread                         th;
 
 private:
@@ -82,17 +86,16 @@ private:
     ~TpThread()
     {
         pending_terminate = true;
-        if (task_base_atom.load())
+        TpTaskBase* task = task_base_atom.load();
+        if (task && !current_task_is_disposal.load())
         {
-            if (dynamic_cast<TpDisposalBase*>(task_base_atom.load())) return;
-            task_base_atom.load()->terminate();
+            task->terminate();
         }
         cv_on_duty.notify_one();
         std::unique_lock<std::mutex> lck(mt_off_duty);
         cv_off_duty.wait(lck, [this]() {
             return is_off_duty.load();
         });
-        lck.unlock();
     }
 };
 
