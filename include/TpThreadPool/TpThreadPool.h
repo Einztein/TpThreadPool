@@ -22,14 +22,13 @@ class TpDisposalBase : public TpTaskBase
 class TpThreadPool
 {
 public:
-    TpThreadPool()                    = delete;
-    TpThreadPool(TpThreadPool&)       = delete;
-    TpThreadPool(const TpThreadPool&) = delete;
-    TpThreadPool(TpThreadPool&& tp2) noexcept: mem(tp2.mem), q_cnt_chg_cb(tp2.q_cnt_chg_cb)
-    {
-        tp2.mem          = nullptr;
-        tp2.q_cnt_chg_cb = nullptr;
-    }
+    // do not copy or move pool, and no default ctor
+    TpThreadPool()                               = delete;
+    TpThreadPool(TpThreadPool&)                  = delete;
+    TpThreadPool(TpThreadPool&&)                 = delete;
+    TpThreadPool(const TpThreadPool&)            = delete;
+    TpThreadPool& operator=(const TpThreadPool&) = delete;
+    TpThreadPool& operator=(TpThreadPool&&)      = delete;
 
     // Constructor
     //  with specified threads count
