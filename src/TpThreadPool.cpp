@@ -16,6 +16,7 @@ struct TpThreadPool::TpThreadPoolPrivates
 {
     TpThreadPool&          mother;
     std::list<TpThread*>   ths{};
+    std::mutex             mt_ths{};
     std::list<TpTaskBase*> task_que{};
     std::mutex             mt_task_que{};
     int                    tid_counter{0};
@@ -58,10 +59,11 @@ public:
             lck_on.unlock();
             if (pending_terminate) break;
             current_task_is_disposal = (dynamic_cast<TpDisposalBase*>(task_working) != nullptr);
-            task_base_atom = task_working;
+            task_base_atom           = task_working;
             task_working->invoke();
+            // if throw, program abort
             // FIXME-1: between this, task_working may be deleted
-            task_base_atom = nullptr;
+            task_base_atom           = nullptr;
             current_task_is_disposal = false;
             // FIXED-1: by adding a flag current_task_is_disposal, 260410
         }
@@ -86,7 +88,7 @@ private:
     ~TpThread()
     {
         pending_terminate = true;
-        TpTaskBase* task = task_base_atom.load();
+        TpTaskBase* task  = task_base_atom.load();
         if (task && !current_task_is_disposal.load())
         {
             task->terminate();
@@ -102,8 +104,14 @@ private:
 TpThreadPool::TpThreadPool(size_t th_cnt, const bool use_auto)
 {
     mem = new TpThreadPoolPrivates(*this);
-    if (use_auto) th_cnt = std::thread::hardware_concurrency() - th_cnt;
-    if (th_cnt == 0) th_cnt = 1;
+    if (use_auto)
+    {
+        int hardware_thread_count = (int)std::thread::hardware_concurrency();
+        if (hardware_thread_count <= 0) th_cnt = 0;
+        else th_cnt = hardware_thread_count;
+    }
+    if (th_cnt == 0) throw std::runtime_error("Will create ZERO threads");
+    std::lock_guard<std::mutex> lck(mem->mt_ths);
     mem->tid_counter = 0;
     for (size_t i = 0; i < th_cnt; i++)
     {
@@ -111,8 +119,16 @@ TpThreadPool::TpThreadPool(size_t th_cnt, const bool use_auto)
     }
 }
 
-size_t TpThreadPool::getThreadCount() const { return mem->ths.size(); }
-size_t TpThreadPool::getTaskCount() const { return mem->task_que.size(); }
+size_t TpThreadPool::getThreadCount() const
+{
+    std::lock_guard<std::mutex> lck(mem->mt_ths);
+    return mem->ths.size();
+}
+size_t TpThreadPool::getTaskCount() const
+{
+    std::lock_guard<std::mutex> lck(mem->mt_task_que);
+    return mem->task_que.size();
+}
 
 void TpThreadPool::setTaskQueCountChangeCallback()
 {
@@ -123,6 +139,7 @@ void TpThreadPool::setTaskQueCountChangeCallback()
 size_t TpThreadPool::changeThreadCount(const size_t count, const bool force_kill_randomly) const
 {
     if (count == 0) throw std::runtime_error("tp_threadpool_change_to_zero");
+    std::lock_guard<std::mutex> lck(mem->mt_ths);
     if (count > mem->ths.size())
     {
         for (size_t i = mem->ths.size(); i < count; i++)
@@ -186,10 +203,10 @@ bool TpThreadPool::modifyTaskQueRetrieve(const TpTaskBase* task) const
         if (task == *it)
         {
             mem->task_que.erase(it);
+            if (q_cnt_chg_cb) q_cnt_chg_cb->operator()(mem->task_que.size());
             return true;
         }
     }
-    if (q_cnt_chg_cb) q_cnt_chg_cb->operator()(mem->task_que.size());
     return false;
 }
 
@@ -216,7 +233,10 @@ void TpThreadPool::beckonThreads() const
 TpThreadPool::~TpThreadPool()
 {
     if (!mem) return;
-    for (const auto* th : mem->ths) th->destory();
+    {
+        std::lock_guard<std::mutex> lck(mem->mt_ths);
+        for (const auto* th : mem->ths) th->destory();
+    }
     delete q_cnt_chg_cb;
     delete mem;
 }

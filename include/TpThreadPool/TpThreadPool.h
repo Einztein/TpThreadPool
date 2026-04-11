@@ -41,9 +41,11 @@ public:
     // Set Task Queue Count Change Callback
     //  give a void(size_t) to enable
     //  or no argus to disable
+    // DO NOT CHANGE CALLBACK AFTER THREADPOOL START
     template<typename FUN, typename... PARS>
     void setTaskQueCountChangeCallback(FUN&& func, PARS&&... pars)
     {
+        delete q_cnt_chg_cb;
         q_cnt_chg_cb = new std::function<void(size_t)>(std::bind(std::forward<FUN>(func), std::forward<PARS>(pars)..., std::placeholders::_1));
     }
     void setTaskQueCountChangeCallback();
